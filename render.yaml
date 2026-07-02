@@ -6,10 +6,18 @@ services:
     dockerfilePath: Dockerfile
     plan: free
     envVars:
-      - key: SPRING_DATASOURCE_URL
+      - key: DB_HOST
         fromDatabase:
           name: split-db
-          property: jdbcConnectionString
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: split-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: split-db
+          property: database
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: split-db
