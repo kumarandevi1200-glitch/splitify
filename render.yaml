@@ -9,7 +9,7 @@ services:
       - key: SPRING_DATASOURCE_URL
         fromDatabase:
           name: split-db
-          property: connectionString
+          property: jdbcConnectionString
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: split-db
@@ -23,6 +23,4 @@ services:
 
 databases:
   - name: split-db
-    databaseName: split
-    user: postgres
     plan: free
