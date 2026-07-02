@@ -3,7 +3,7 @@ services:
     name: split-api
     runtime: docker
     dockerContext: backend
-    dockerfilePath: Dockerfile
+    dockerfilePath: backend/Dockerfile
     plan: free
     envVars:
       - key: DB_HOST
