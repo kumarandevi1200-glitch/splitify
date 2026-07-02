@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: split-api
+    runtime: docker
+    dockerContext: backend
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: split-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: split-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: split-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+
+databases:
+  - name: split-db
+    databaseName: split
+    user: postgres
+    plan: free

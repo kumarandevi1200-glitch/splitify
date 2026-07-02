@@ -1,0 +1,29 @@
+# Build directories
+**/target/
+**/build/
+**/.dart_tool/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+db.crypt
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# Flutter specific generated files
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/pubspec.lock
+
+# Local environment / Docker files
+.env
+pgdata/
