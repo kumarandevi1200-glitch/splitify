@@ -5,9 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
 
 class ApiService extends ChangeNotifier {
-  // Use http://10.0.2.2:8080 for Android Emulator local connections, 
-  // http://localhost:8080 for web/desktop, or render URL.
-  String _baseUrl = 'http://localhost:8080';
+  // Production URL hosted on Render
+  String _baseUrl = 'https://split-api-0qdn.onrender.com';
   
   String? _accessToken;
   String? _refreshToken;

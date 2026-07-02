@@ -15,7 +15,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _urlController = TextEditingController(text: 'http://localhost:8080');
   
   bool _isLoading = false;
   String? _errorMessage;
@@ -24,7 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _urlController.dispose();
     super.dispose();
   }
 
@@ -37,7 +35,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     final api = Provider.of<ApiService>(context, listen: false);
-    api.setBaseUrl(_urlController.text.trim());
 
     try {
       await api.login(
@@ -121,16 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
                         
-                        // API Server URL
-                        TextFormField(
-                          controller: _urlController,
-                          decoration: const InputDecoration(
-                            labelText: 'Backend URL',
-                            prefixIcon: Icon(Icons.dns, size: 20),
-                          ),
-                          validator: (value) => value == null || value.isEmpty ? 'API URL is required' : null,
-                        ),
-                        const SizedBox(height: 16),
+
                         
                         // Email Field
                         TextFormField(
