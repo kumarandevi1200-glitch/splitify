@@ -1,6 +1,7 @@
 # Build directories
 **/target/
-**/build/
+**/build/*
+!**/build/web/
 **/.dart_tool/
 
 # OS-specific files

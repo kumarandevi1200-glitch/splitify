@@ -29,11 +29,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
 
-  - type: web
+  - type: static
     name: split-frontend
-    runtime: docker
-    dockerContext: frontend
-    dockerfilePath: frontend/Dockerfile
+    publishPath: frontend/build/web
     plan: free
 
 databases:
