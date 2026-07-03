@@ -29,8 +29,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
 
-  - type: static
+  - type: web
     name: split-web
+    env: static
     publishPath: frontend/build/web
     buildCommand: "echo 'Build skipped'"
     plan: free
