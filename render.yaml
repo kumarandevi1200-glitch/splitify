@@ -32,7 +32,7 @@ services:
   - type: web
     name: split-web
     env: static
-    publishPath: frontend/build/web
+    staticPublishPath: frontend/build/web
     buildCommand: "echo 'Build skipped'"
     plan: free
 
