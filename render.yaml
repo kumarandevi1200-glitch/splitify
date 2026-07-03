@@ -34,7 +34,6 @@ services:
     env: static
     staticPublishPath: frontend/build/web
     buildCommand: "echo 'Build skipped'"
-    plan: free
 
 databases:
   - name: split-db
