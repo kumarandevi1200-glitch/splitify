@@ -32,6 +32,7 @@ services:
   - type: static
     name: split-frontend
     publishPath: frontend/build/web
+    buildCommand: "echo 'Build skipped'"
     plan: free
 
 databases:
