@@ -30,7 +30,7 @@ services:
         generateValue: true
 
   - type: static
-    name: split-frontend
+    name: split-web
     publishPath: frontend/build/web
     buildCommand: "echo 'Build skipped'"
     plan: free
