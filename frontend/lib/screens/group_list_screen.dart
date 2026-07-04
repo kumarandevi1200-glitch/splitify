@@ -405,7 +405,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            '${group.members.length} members • Currency: ${group.currency}',
+                                            '${group.members.length} members',
                                             style: const TextStyle(
                                               color: Colors.grey,
                                               fontSize: 14,
