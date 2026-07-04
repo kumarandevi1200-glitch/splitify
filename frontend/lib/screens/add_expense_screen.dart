@@ -136,10 +136,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   void _updatePercentageSplits() {
     if (_selectedSplitType != 'PERCENTAGE') return;
     final activeCount = _participating.values.where((v) => v).length;
-    final pct = activeCount > 0 ? (100.0 / activeCount) : 0.0;
+    if (activeCount == 0) {
+      for (var member in widget.members) {
+        _splitControllers[member.id]!.clear();
+      }
+      return;
+    }
+
+    final double standardPct = double.parse((100.0 / activeCount).toStringAsFixed(2));
+    final double sumOfStandard = standardPct * activeCount;
+    final double leftover = double.parse((100.0 - sumOfStandard).toStringAsFixed(2));
+
+    bool isFirst = true;
     for (var member in widget.members) {
       if (_participating[member.id] == true) {
-        _splitControllers[member.id]!.text = pct.toStringAsFixed(2);
+        double memberPct = standardPct;
+        if (isFirst) {
+          memberPct = double.parse((standardPct + leftover).toStringAsFixed(2));
+          isFirst = false;
+        }
+        _splitControllers[member.id]!.text = memberPct.toStringAsFixed(2);
       } else {
         _splitControllers[member.id]!.clear();
       }
