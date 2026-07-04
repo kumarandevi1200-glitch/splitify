@@ -30,6 +30,37 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
   String? _errorMessage;
   late String _idempotencyKey;
 
+  bool _isDirty = false;
+
+  void _markDirty() {
+    if (!_isDirty) {
+      setState(() {
+        _isDirty = true;
+      });
+    }
+  }
+
+  Future<bool?> _showDiscardDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unsaved Changes?'),
+        content: const Text('You have unsaved changes. Are you sure you want to leave?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep Editing'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +78,9 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
         _selectedRecipientId = otherMembers.first.id;
       }
     }
+
+    _amountController.addListener(_markDirty);
+    _noteController.addListener(_markDirty);
   }
 
   @override
@@ -86,6 +120,9 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
       }
 
       if (mounted) {
+        setState(() {
+          _isDirty = false;
+        });
         Navigator.of(context).pop(true); // Return success
       }
     } catch (e) {
@@ -112,6 +149,9 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
     try {
       await api.deleteSettlement(widget.groupId, widget.settlementToEdit!.id);
       if (mounted) {
+        setState(() {
+          _isDirty = false;
+        });
         Navigator.of(context).pop(true); // Return success
       }
     } catch (e) {
@@ -149,10 +189,19 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
     final otherMembers = widget.members.where((m) => m.id != api.userId).toList();
     final canEdit = widget.settlementToEdit == null || widget.settlementToEdit!.paidBy.id == api.userId;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.settlementToEdit != null ? (canEdit ? 'Edit Settlement' : 'View Settlement') : 'Record Settlement'),
-      ),
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final leave = await _showDiscardDialog(context);
+        if (leave == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.settlementToEdit != null ? (canEdit ? 'Edit Settlement' : 'View Settlement') : 'Record Settlement'),
+        ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -197,7 +246,10 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
                             child: Text(m.email),
                           );
                         }).toList(),
-                        onChanged: canEdit ? (val) => setState(() => _selectedRecipientId = val) : null,
+                        onChanged: canEdit ? (val) {
+                          setState(() => _selectedRecipientId = val);
+                          _markDirty();
+                        } : null,
                         validator: (val) => val == null ? 'Select a recipient' : null,
                       ),
                       const SizedBox(height: 16),
@@ -259,6 +311,7 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

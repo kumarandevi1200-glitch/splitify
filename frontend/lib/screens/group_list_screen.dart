@@ -16,6 +16,27 @@ class _GroupListScreenState extends State<GroupListScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  Future<bool?> _showDiscardDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unsaved Changes?'),
+        content: const Text('You have unsaved changes. Are you sure you want to leave?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep Editing'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -64,7 +85,21 @@ class _GroupListScreenState extends State<GroupListScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return PopScope(
-              canPop: !isMandatory,
+              canPop: false,
+              onPopInvoked: (didPop) async {
+                if (didPop) return;
+                if (isMandatory) return; // Cannot pop at all unless they save
+                
+                final isChanged = nameController.text.trim() != (api.name ?? '');
+                if (isChanged) {
+                  final leave = await _showDiscardDialog(context);
+                  if (leave == true && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                } else {
+                  Navigator.of(context).pop();
+                }
+              },
               child: AlertDialog(
                 title: Text(isMandatory ? 'Welcome! Set Display Name' : 'Update Profile Name'),
                 content: Column(
@@ -85,7 +120,19 @@ class _GroupListScreenState extends State<GroupListScreen> {
                 actions: [
                   if (!isMandatory)
                     TextButton(
-                      onPressed: isSaving ? null : () => Navigator.of(context).pop(),
+                      onPressed: isSaving
+                          ? null
+                          : () async {
+                              final isChanged = nameController.text.trim() != (api.name ?? '');
+                              if (isChanged) {
+                                final leave = await _showDiscardDialog(context);
+                                if (leave == true && context.mounted) {
+                                  Navigator.of(context).pop();
+                                }
+                              } else {
+                                Navigator.of(context).pop();
+                              }
+                            },
                       child: const Text('Cancel'),
                     ),
                   ElevatedButton(

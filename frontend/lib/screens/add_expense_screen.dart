@@ -36,6 +36,37 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   late String _idempotencyKey;
+  
+  bool _isDirty = false;
+
+  void _markDirty() {
+    if (!_isDirty) {
+      setState(() {
+        _isDirty = true;
+      });
+    }
+  }
+
+  Future<bool?> _showDiscardDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unsaved Changes?'),
+        content: const Text('You have unsaved changes. Are you sure you want to leave?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep Editing'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -83,6 +114,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       final api = Provider.of<ApiService>(context, listen: false);
       _selectedPayerId = api.userId;
     }
+
+    _amountController.addListener(_markDirty);
+    _descriptionController.addListener(_markDirty);
+    for (var controller in _splitControllers.values) {
+      controller.addListener(_markDirty);
+    }
   }
 
   @override
@@ -120,6 +157,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         _updatePercentageSplits();
       }
     });
+    _markDirty();
   }
 
   // Local calculations validation check
@@ -215,6 +253,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     try {
       await api.deleteExpense(widget.groupId, widget.expenseToEdit!.id);
       if (mounted) {
+        setState(() {
+          _isDirty = false;
+        });
         Navigator.of(context).pop(true); // Return success
       }
     } catch (e) {
@@ -299,6 +340,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       }
 
       if (mounted) {
+        setState(() {
+          _isDirty = false;
+        });
         Navigator.of(context).pop(true); // Return success
       }
     } catch (e) {
@@ -323,10 +367,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final activeCount = _participating.values.where((v) => v).length;
     final shareAmt = activeCount > 0 ? totalAmt / activeCount : 0.0;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.expenseToEdit != null ? (canEdit ? 'Edit Expense' : 'View Expense') : 'Add Expense'),
-      ),
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final leave = await _showDiscardDialog(context);
+        if (leave == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.expenseToEdit != null ? (canEdit ? 'Edit Expense' : 'View Expense') : 'Add Expense'),
+        ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -397,7 +450,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                             child: Text(m.email),
                           );
                         }).toList(),
-                        onChanged: canEdit ? (val) => setState(() => _selectedPayerId = val) : null,
+                        onChanged: canEdit ? (val) {
+                          setState(() => _selectedPayerId = val);
+                          _markDirty();
+                        } : null,
                         validator: (val) => val == null ? 'Select who paid' : null,
                       ),
                     ],
@@ -456,6 +512,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                               _updatePercentageSplits();
                                             }
                                           });
+                                          _markDirty();
                                         }
                                       : null,
                                 ),
@@ -550,6 +607,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
