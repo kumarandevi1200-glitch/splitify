@@ -29,6 +29,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
     _members = widget.group.members;
     _refreshData();
   }
@@ -250,54 +255,51 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
               child: const Icon(Icons.person_add),
             )
           : null,
-      bottomNavigationBar: _tabController.index != 2
-          ? SafeArea(
+      bottomNavigationBar: _tabController.index == 2
+          ? null
+          : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final result = await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => RecordSettlementScreen(groupId: widget.group.id, members: _members),
-                            ),
-                          );
-                          if (result == true) _refreshData();
-                        },
-                        icon: const Icon(Icons.payment),
-                        label: const Text('Settle Debt'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          side: const BorderSide(color: Color(0xFF8B5CF6)),
+                child: _tabController.index == 0
+                    ? SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final result = await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => AddExpenseScreen(groupId: widget.group.id, members: _members, currency: widget.group.currency),
+                              ),
+                            );
+                            if (result == true) _refreshData();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: const Text('Add Expense'),
+                        ),
+                      )
+                    : SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => RecordSettlementScreen(groupId: widget.group.id, members: _members),
+                              ),
+                            );
+                            if (result == true) _refreshData();
+                          },
+                          icon: const Icon(Icons.payment),
+                          label: const Text('Settle Debt'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: const BorderSide(color: Color(0xFF8B5CF6)),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final result = await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => AddExpenseScreen(groupId: widget.group.id, members: _members, currency: widget.group.currency),
-                            ),
-                          );
-                          if (result == true) _refreshData();
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Expense'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ),
-            )
-          : null,
+            ),
     );
   }
 
