@@ -246,12 +246,12 @@ public class ExpenseService {
     }
 
     public ExpenseResponse mapToExpenseResponse(Expense expense) {
-        MemberResponse payer = new MemberResponse(expense.getPayer().getId(), expense.getPayer().getEmail());
+        MemberResponse payer = new MemberResponse(expense.getPayer().getId(), expense.getPayer().getDisplayName());
         
         List<ExpenseShareResponse> shares = expense.getShares().stream()
                 .map(s -> new ExpenseShareResponse(
                         s.getUser().getId(),
-                        s.getUser().getEmail(),
+                        s.getUser().getDisplayName(),
                         s.getShareAmount(),
                         s.getPercentage(),
                         s.getShares()

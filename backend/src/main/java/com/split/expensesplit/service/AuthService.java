@@ -41,7 +41,7 @@ public class AuthService {
         String accessToken = jwtService.generateAccessToken(savedUser.getEmail());
         String refreshToken = jwtService.generateRefreshToken(savedUser.getEmail());
 
-        return new AuthResponse(accessToken, refreshToken, savedUser.getEmail(), savedUser.getId());
+        return new AuthResponse(accessToken, refreshToken, savedUser.getEmail(), savedUser.getId(), savedUser.getName());
     }
 
     @Transactional(readOnly = true)
@@ -56,7 +56,7 @@ public class AuthService {
         String accessToken = jwtService.generateAccessToken(user.getEmail());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
-        return new AuthResponse(accessToken, refreshToken, user.getEmail(), user.getId());
+        return new AuthResponse(accessToken, refreshToken, user.getEmail(), user.getId(), user.getName());
     }
 
     public AuthResponse refresh(String refreshToken) {
@@ -74,7 +74,7 @@ public class AuthService {
             if (jwtService.validateToken(refreshToken, user.getEmail())) {
                 String newAccessToken = jwtService.generateAccessToken(user.getEmail());
                 String newRefreshToken = jwtService.generateRefreshToken(user.getEmail());
-                return new AuthResponse(newAccessToken, newRefreshToken, user.getEmail(), user.getId());
+                return new AuthResponse(newAccessToken, newRefreshToken, user.getEmail(), user.getId(), user.getName());
             } else {
                 throw new CustomException("TOKEN_EXPIRED", "Refresh token is expired", HttpStatus.UNAUTHORIZED);
             }

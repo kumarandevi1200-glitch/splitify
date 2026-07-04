@@ -75,8 +75,8 @@ public class SettlementService {
     }
 
     private SettlementResponse mapToSettlementResponse(Settlement settlement) {
-        MemberResponse paidBy = new MemberResponse(settlement.getPaidBy().getId(), settlement.getPaidBy().getEmail());
-        MemberResponse paidTo = new MemberResponse(settlement.getPaidTo().getId(), settlement.getPaidTo().getEmail());
+        MemberResponse paidBy = new MemberResponse(settlement.getPaidBy().getId(), settlement.getPaidBy().getDisplayName());
+        MemberResponse paidTo = new MemberResponse(settlement.getPaidTo().getId(), settlement.getPaidTo().getDisplayName());
 
         return new SettlementResponse(
                 settlement.getId(),

@@ -129,7 +129,7 @@ public class GroupService {
     public List<MemberResponse> listGroupMembers(Long groupId, String email) {
         Group group = getGroupAndVerifyMembership(groupId, email);
         return group.getMembers().stream()
-                .map(m -> new MemberResponse(m.getId(), m.getEmail()))
+                .map(m -> new MemberResponse(m.getId(), m.getDisplayName()))
                 .collect(Collectors.toList());
     }
 
@@ -150,7 +150,7 @@ public class GroupService {
 
     private GroupResponse mapToGroupResponse(Group group) {
         List<MemberResponse> members = group.getMembers().stream()
-                .map(m -> new MemberResponse(m.getId(), m.getEmail()))
+                .map(m -> new MemberResponse(m.getId(), m.getDisplayName()))
                 .collect(Collectors.toList());
 
         return new GroupResponse(

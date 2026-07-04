@@ -17,6 +17,8 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    private String name;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -57,5 +59,17 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDisplayName() {
+        return (name != null && !name.trim().isEmpty()) ? name : email;
     }
 }

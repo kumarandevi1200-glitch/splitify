@@ -12,12 +12,15 @@ class ApiService extends ChangeNotifier {
   String? _refreshToken;
   String? _email;
   int? _userId;
+  String? _name;
   bool _isAuthenticated = false;
 
   String get baseUrl => _baseUrl;
   bool get isAuthenticated => _isAuthenticated;
   String? get email => _email;
   int? get userId => _userId;
+  String? get displayName => _name ?? _email;
+  String? get name => _name;
 
   void setBaseUrl(String url) {
     _baseUrl = url;
@@ -35,21 +38,28 @@ class ApiService extends ChangeNotifier {
     _refreshToken = prefs.getString('refresh_token');
     _email = prefs.getString('email');
     _userId = prefs.getInt('user_id');
+    _name = prefs.getString('name');
     _isAuthenticated = _accessToken != null;
     notifyListeners();
   }
 
-  Future<void> _saveSession(String access, String refresh, String email, int userId) async {
+  Future<void> _saveSession(String access, String refresh, String email, int userId, {String? name}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('access_token', access);
     await prefs.setString('refresh_token', refresh);
     await prefs.setString('email', email);
     await prefs.setInt('user_id', userId);
+    if (name != null) {
+      await prefs.setString('name', name);
+    } else {
+      await prefs.remove('name');
+    }
 
     _accessToken = access;
     _refreshToken = refresh;
     _email = email;
     _userId = userId;
+    _name = name;
     _isAuthenticated = true;
     notifyListeners();
   }
@@ -60,11 +70,13 @@ class ApiService extends ChangeNotifier {
     await prefs.remove('refresh_token');
     await prefs.remove('email');
     await prefs.remove('user_id');
+    await prefs.remove('name');
 
     _accessToken = null;
     _refreshToken = null;
     _email = null;
     _userId = null;
+    _name = null;
     _isAuthenticated = false;
     notifyListeners();
   }
@@ -100,6 +112,7 @@ class ApiService extends ChangeNotifier {
           data['refreshToken'],
           data['email'],
           data['userId'],
+          name: data['name'],
         );
         return true;
       }
@@ -142,6 +155,7 @@ class ApiService extends ChangeNotifier {
         data['refreshToken'],
         data['email'],
         data['userId'],
+        name: data['name'],
       );
     } else {
       _throwError(response);
@@ -162,7 +176,25 @@ class ApiService extends ChangeNotifier {
         data['refreshToken'],
         data['email'],
         data['userId'],
+        name: data['name'],
       );
+    } else {
+      _throwError(response);
+    }
+  }
+
+  Future<void> updateProfileName(String newName) async {
+    final response = await _authenticatedRequest(() => http.put(
+      Uri.parse('$_baseUrl/api/users/profile'),
+      headers: _headers(),
+      body: jsonEncode({'name': newName}),
+    ));
+
+    if (response.statusCode == 200) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('name', newName);
+      _name = newName;
+      notifyListeners();
     } else {
       _throwError(response);
     }

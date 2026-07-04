@@ -64,7 +64,7 @@ public class ReportService {
         List<MemberBalance> balancesList = group.getMembers().stream()
                 .map(member -> new MemberBalance(
                         member.getId(),
-                        member.getEmail(),
+                        member.getDisplayName(),
                         netBalances.getOrDefault(member.getId(), BigDecimal.ZERO).setScale(2, RoundingMode.HALF_EVEN)
                 ))
                 .sorted(Comparator.comparing(MemberBalance::getEmail))
@@ -130,23 +130,23 @@ public class ReportService {
             }
         }
 
-        // Subtract settlements paid and add settlements received
+        // Add settlements paid and subtract settlements received
         for (Settlement set : settlements) {
             Long paidById = set.getPaidBy().getId();
             Long paidToId = set.getPaidTo().getId();
 
             if (balances.containsKey(paidById)) {
-                balances.put(paidById, balances.get(paidById).subtract(set.getAmount()));
+                balances.put(paidById, balances.get(paidById).add(set.getAmount()));
             }
             if (balances.containsKey(paidToId)) {
-                balances.put(paidToId, balances.get(paidToId).add(set.getAmount()));
+                balances.put(paidToId, balances.get(paidToId).subtract(set.getAmount()));
             }
         }
 
         return balances;
     }
 
-    private List<DebtResponse> calculateDirectDebts(Collection<User> members, List<Expense> expenses, List<Settlement> settlements) {
+    List<DebtResponse> calculateDirectDebts(Collection<User> members, List<Expense> expenses, List<Settlement> settlements) {
         // Map user list by ID for lookups
         Map<Long, User> userMap = members.stream().collect(Collectors.toMap(User::getId, u -> u));
 
@@ -192,7 +192,7 @@ public class ReportService {
                 pairDebts.put(keyReverse, debt.add(set.getAmount()));
             } else {
                 // No direct debt existed, record as "reverse debt" (excess pre-payment)
-                pairDebts.put(keyDirect, set.getAmount());
+                pairDebts.put(keyReverse, set.getAmount());
             }
         }
 
@@ -222,8 +222,8 @@ public class ReportService {
                 User toUser = userMap.get(toId);
                 if (fromUser != null && toUser != null) {
                     debts.add(new DebtResponse(
-                            new MemberResponse(fromUser.getId(), fromUser.getEmail()),
-                            new MemberResponse(toUser.getId(), toUser.getEmail()),
+                            new MemberResponse(fromUser.getId(), fromUser.getDisplayName()),
+                            new MemberResponse(toUser.getId(), toUser.getDisplayName()),
                             netAmt.setScale(2, RoundingMode.HALF_EVEN)
                     ));
                 }
@@ -232,8 +232,8 @@ public class ReportService {
                 User toUser = userMap.get(fromId);
                 if (fromUser != null && toUser != null) {
                     debts.add(new DebtResponse(
-                            new MemberResponse(fromUser.getId(), fromUser.getEmail()),
-                            new MemberResponse(toUser.getId(), toUser.getEmail()),
+                            new MemberResponse(fromUser.getId(), fromUser.getDisplayName()),
+                            new MemberResponse(toUser.getId(), toUser.getDisplayName()),
                             netAmt.abs().setScale(2, RoundingMode.HALF_EVEN)
                     ));
                 }
@@ -288,8 +288,8 @@ public class ReportService {
 
             // Record transaction: d.user pays c.user settleAmount
             transactions.add(new DebtResponse(
-                    new MemberResponse(d.user.getId(), d.user.getEmail()),
-                    new MemberResponse(c.user.getId(), c.user.getEmail()),
+                    new MemberResponse(d.user.getId(), d.user.getDisplayName()),
+                    new MemberResponse(c.user.getId(), c.user.getDisplayName()),
                     settleAmount.setScale(2, RoundingMode.HALF_EVEN)
             ));
 

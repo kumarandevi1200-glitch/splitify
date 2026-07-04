@@ -28,3 +28,7 @@ frontend/pubspec.lock
 # Local environment / Docker files
 .env
 pgdata/
+
+# Local Maven dist
+maven-dist/
+maven.zip

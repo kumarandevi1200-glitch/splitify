@@ -20,6 +20,13 @@ class _GroupListScreenState extends State<GroupListScreen> {
   void initState() {
     super.initState();
     _refreshGroups();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final api = Provider.of<ApiService>(context, listen: false);
+      if (api.name == null || api.name!.trim().isEmpty) {
+        _showProfileNameDialog(isMandatory: true);
+      }
+    });
   }
 
   Future<void> _refreshGroups() async {
@@ -43,6 +50,76 @@ class _GroupListScreenState extends State<GroupListScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _showProfileNameDialog({bool isMandatory = false}) {
+    final api = Provider.of<ApiService>(context, listen: false);
+    final nameController = TextEditingController(text: api.name);
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: !isMandatory,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return PopScope(
+              canPop: !isMandatory,
+              child: AlertDialog(
+                title: Text(isMandatory ? 'Welcome! Set Display Name' : 'Update Profile Name'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Please enter your name so others in your groups can recognize you easily.'),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Your Name',
+                        hintText: 'e.g. Alice Green',
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  if (!isMandatory)
+                    TextButton(
+                      onPressed: isSaving ? null : () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                  ElevatedButton(
+                    onPressed: isSaving
+                        ? null
+                        : () async {
+                            final text = nameController.text.trim();
+                            if (text.isEmpty) return;
+                            setDialogState(() => isSaving = true);
+                            try {
+                              await api.updateProfileName(text);
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Display name updated successfully!')),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: ${e.toString().replaceFirst('Exception: ', '')}')),
+                              );
+                            } finally {
+                              setDialogState(() => isSaving = false);
+                            }
+                          },
+                    child: isSaving
+                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text('Save'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showCreateGroupDialog() {
@@ -178,6 +255,11 @@ class _GroupListScreenState extends State<GroupListScreen> {
       appBar: AppBar(
         title: const Text('My Groups'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            tooltip: 'Profile Settings',
+            onPressed: () => _showProfileNameDialog(isMandatory: false),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
