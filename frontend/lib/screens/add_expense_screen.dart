@@ -498,11 +498,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           DropdownButton<String>(
                             value: _selectedSplitType,
                             dropdownColor: Theme.of(context).cardColor,
-                            items: const [
-                              DropdownMenuItem(value: 'EQUAL', child: Text('Equally')),
-                              DropdownMenuItem(value: 'EXACT', child: Text('Exact Amounts')),
-                              DropdownMenuItem(value: 'PERCENTAGE', child: Text('Percentages')),
-                              DropdownMenuItem(value: 'SHARES', child: Text('Shares')),
+                            items: [
+                              const DropdownMenuItem(value: 'EQUAL', child: Text('Equally')),
+                              const DropdownMenuItem(value: 'EXACT', child: Text('Exact Amounts')),
+                              const DropdownMenuItem(value: 'SHARES', child: Text('Shares')),
+                              if (_selectedSplitType == 'PERCENTAGE')
+                                const DropdownMenuItem(value: 'PERCENTAGE', child: Text('Percentages')),
                             ],
                             onChanged: canEdit ? _onSplitTypeChanged : null,
                           ),
