@@ -196,7 +196,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
         title: Text(widget.group.name),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF6C63FF),
+          indicatorColor: const Color(0xFF8B5CF6),
           tabs: const [
             Tab(text: 'Expenses', icon: Icon(Icons.receipt_long)),
             Tab(text: 'Settlements', icon: Icon(Icons.payment)),
@@ -246,7 +246,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
       floatingActionButton: _tabController.index == 2
           ? FloatingActionButton(
               onPressed: _showInviteCodeDialog,
-              backgroundColor: const Color(0xFF6C63FF),
+              backgroundColor: const Color(0xFF8B5CF6),
               child: const Icon(Icons.person_add),
             )
           : null,
@@ -271,7 +271,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          side: const BorderSide(color: Color(0xFF6C63FF)),
+                          side: const BorderSide(color: Color(0xFF8B5CF6)),
                         ),
                       ),
                     ),
@@ -313,10 +313,18 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
         final exp = _expenses[index];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: CircleAvatar(
-              backgroundColor: Colors.white.withOpacity(0.05),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Color(0xFF8B5CF6), width: 4),
+                ),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                leading: CircleAvatar(
+                  backgroundColor: Colors.white.withOpacity(0.05),
               child: Icon(
                 exp.category.toLowerCase() == 'food'
                     ? Icons.restaurant
@@ -325,7 +333,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                         : exp.category.toLowerCase() == 'housing'
                             ? Icons.home
                             : Icons.receipt_long,
-                color: const Color(0xFF03DAC6),
+                color: const Color(0xFF8B5CF6),
               ),
             ),
             title: Text(exp.description, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -346,10 +354,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
               if (result == true) _refreshData();
             },
           ),
-        );
-      },
+        ),
+      ),
     );
-  }
+  },
+);
+}
 
   Widget _buildSettlementsList() {
     if (_settlements.isEmpty) {
@@ -363,12 +373,20 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
         final set = _settlements[index];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: CircleAvatar(
-              backgroundColor: const Color(0xFF00C853).withOpacity(0.15),
-              child: const Icon(Icons.check_circle_outline, color: Color(0xFF00C853)),
-            ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Color(0xFF10B981), width: 4),
+                ),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                leading: CircleAvatar(
+                  backgroundColor: const Color(0xFF10B981).withOpacity(0.15),
+                  child: const Icon(Icons.check_circle_outline, color: Color(0xFF10B981)),
+                ),
             title: Text('${set.paidBy.email} paid ${set.paidTo.email}'),
             subtitle: Text(
               '${set.note ?? "Settled debt"}\n${set.settlementDate.toLocal().toString().substring(0, 16)}',
@@ -376,7 +394,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
             ),
             trailing: Text(
               '${widget.group.currency} ${set.amount.toStringAsFixed(2)}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF00C853)),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF10B981)),
             ),
             onTap: () async {
               final result = await Navigator.of(context).push(
@@ -391,10 +409,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
               if (result == true) _refreshData();
             },
           ),
-        );
-      },
+        ),
+      ),
     );
-  }
+  },
+);
+}
 
   Widget _buildMembersList() {
     return ListView.builder(

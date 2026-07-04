@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: const EdgeInsets.all(16),
                 child: ShaderMask(
                   shaderCallback: (bounds) => const LinearGradient(
-                    colors: [Color(0xFF6C63FF), Color(0xFF03DAC6)],
+                    colors: [Color(0xFF8B5CF6), Color(0xFF4F46E5)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ).createShader(bounds),

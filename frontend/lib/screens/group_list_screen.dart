@@ -330,7 +330,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
                                     colors: [
                                       Theme.of(context).cardColor,
                                       Theme.of(context).cardColor.withOpacity(0.85),
-                                      const Color(0xFF6C63FF).withOpacity(0.08),
+                                      const Color(0xFF8B5CF6).withOpacity(0.08),
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -398,7 +398,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    side: const BorderSide(color: Color(0xFF6C63FF)),
+                    side: const BorderSide(color: Color(0xFF8B5CF6)),
                   ),
                 ),
               ),

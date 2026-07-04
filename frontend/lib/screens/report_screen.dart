@@ -102,7 +102,7 @@ class _ReportScreenState extends State<ReportScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: const LinearGradient(
-            colors: [Color(0xFF6C63FF), Color(0xFF03DAC6)],
+            colors: [Color(0xFF8B5CF6), Color(0xFF4F46E5)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -162,11 +162,11 @@ class _ReportScreenState extends State<ReportScreen> {
                 
                 Color statusColor = Colors.grey;
                 String statusText = 'Settled';
-                if (isPositive) {
-                  statusColor = const Color(0xFF00C853);
+                 if (isPositive) {
+                  statusColor = const Color(0xFF10B981);
                   statusText = 'gets back';
                 } else if (isNegative) {
-                  statusColor = const Color(0xFFFF5252);
+                  statusColor = const Color(0xFFEF4444);
                   statusText = 'owes';
                 }
 
@@ -245,7 +245,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
                 Switch(
                   value: _useOptimalSettlements,
-                  activeColor: const Color(0xFF6C63FF),
+                  activeColor: const Color(0xFF8B5CF6),
                   onChanged: (val) {
                     setState(() {
                       _useOptimalSettlements = val;
@@ -307,13 +307,13 @@ class _ReportScreenState extends State<ReportScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6C63FF).withOpacity(0.15),
+                              color: const Color(0xFF8B5CF6).withOpacity(0.15),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               '${widget.currency} ${debt.amount.toStringAsFixed(2)}',
                               style: const TextStyle(
-                                color: Color(0xFF6C63FF),
+                                color: Color(0xFF8B5CF6),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -367,12 +367,12 @@ class _ReportScreenState extends State<ReportScreen> {
 
   // Helper colors for charts
   final List<Color> _chartColors = [
-    const Color(0xFF6C63FF),
-    const Color(0xFF03DAC6),
-    const Color(0xFF00C853),
-    const Color(0xFFFF5252),
-    const Color(0xFFFFB300),
-    const Color(0xFFE040FB),
+    const Color(0xFF8B5CF6),
+    const Color(0xFF10B981),
+    const Color(0xFF3B82F6),
+    const Color(0xFFF59E0B),
+    const Color(0xFFEC4899),
+    const Color(0xFF06B6D4),
   ];
 
   List<PieChartSectionData> _buildPieSections() {

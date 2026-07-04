@@ -471,7 +471,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                           : '${widget.currency} 0.00',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: isChecked ? const Color(0xFF03DAC6) : Colors.grey,
+                                        color: isChecked ? const Color(0xFF8B5CF6) : Colors.grey,
                                       ),
                                     ),
                                   ),
