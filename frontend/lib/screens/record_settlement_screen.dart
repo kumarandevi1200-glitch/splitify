@@ -101,14 +101,57 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
     }
   }
 
+  void _deleteSettlementInside() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final api = Provider.of<ApiService>(context, listen: false);
+
+    try {
+      await api.deleteSettlement(widget.groupId, widget.settlementToEdit!.id);
+      if (mounted) {
+        Navigator.of(context).pop(true); // Return success
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  void _showDeleteConfirmationInside() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Settlement?'),
+        content: Text('Are you sure you want to delete this settlement of ${widget.settlementToEdit!.amount.toStringAsFixed(2)}? This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteSettlementInside();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final api = Provider.of<ApiService>(context, listen: false);
     final otherMembers = widget.members.where((m) => m.id != api.userId).toList();
+    final canEdit = widget.settlementToEdit == null || widget.settlementToEdit!.paidBy.id == api.userId;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.settlementToEdit != null ? 'Edit Settlement' : 'Record Settlement'),
+        title: Text(widget.settlementToEdit != null ? (canEdit ? 'Edit Settlement' : 'View Settlement') : 'Record Settlement'),
       ),
       body: Form(
         key: _formKey,
@@ -125,6 +168,7 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
                       // Amount Input
                       TextFormField(
                         controller: _amountController,
+                        enabled: canEdit,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(
                           labelText: 'Payment Amount',
@@ -153,7 +197,7 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
                             child: Text(m.email),
                           );
                         }).toList(),
-                        onChanged: (val) => setState(() => _selectedRecipientId = val),
+                        onChanged: canEdit ? (val) => setState(() => _selectedRecipientId = val) : null,
                         validator: (val) => val == null ? 'Select a recipient' : null,
                       ),
                       const SizedBox(height: 16),
@@ -161,6 +205,7 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
                       // Note Input
                       TextFormField(
                         controller: _noteController,
+                        enabled: canEdit,
                         decoration: const InputDecoration(
                           labelText: 'Note (Optional)',
                           prefixIcon: Icon(Icons.note),
@@ -182,12 +227,34 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
                 const SizedBox(height: 16),
               ],
 
-              ElevatedButton(
-                onPressed: _isLoading || _selectedRecipientId == null ? null : _submit,
-                child: _isLoading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(widget.settlementToEdit != null ? 'Update Settlement' : 'Record Settlement Payment'),
-              ),
+              if (canEdit) ...[
+                ElevatedButton(
+                  onPressed: _isLoading || _selectedRecipientId == null ? null : _submit,
+                  child: _isLoading
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : Text(widget.settlementToEdit != null ? 'Update Settlement' : 'Record Settlement Payment'),
+                ),
+                if (widget.settlementToEdit != null) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _isLoading ? null : _showDeleteConfirmationInside,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(color: Theme.of(context).colorScheme.error),
+                    ),
+                    child: const Text('Delete Settlement'),
+                  ),
+                ],
+              ] else ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    'Read-only: Only the sender of this settlement can edit or delete it.',
+                    style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

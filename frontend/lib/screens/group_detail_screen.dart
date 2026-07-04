@@ -189,21 +189,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
     );
   }
 
-  void _deleteExpense(Expense expense) async {
-    try {
-      final api = Provider.of<ApiService>(context, listen: false);
-      await api.deleteExpense(widget.group.id, expense.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Expense deleted successfully')),
-      );
-      _refreshData();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -296,7 +281,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                         onPressed: () async {
                           final result = await Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => AddExpenseScreen(groupId: widget.group.id, members: _members),
+                              builder: (_) => AddExpenseScreen(groupId: widget.group.id, members: _members, currency: widget.group.currency),
                             ),
                           );
                           if (result == true) _refreshData();
@@ -348,94 +333,21 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
               'Paid by ${exp.payer.email}\nSplit: ${exp.splitType} • ${exp.expenseDate.toLocal().toString().substring(0, 16)}',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${widget.group.currency} ${exp.amount.toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                if (exp.payer.id == Provider.of<ApiService>(context, listen: false).userId)
-                  PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        final result = await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => AddExpenseScreen(groupId: widget.group.id, members: _members, expenseToEdit: exp),
-                          ),
-                        );
-                        if (result == true) _refreshData();
-                      } else if (value == 'delete') {
-                        _showDeleteConfirmation(exp);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                    ],
-                  ),
-              ],
+            trailing: Text(
+              '${widget.group.currency} ${exp.amount.toStringAsFixed(2)}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
+            onTap: () async {
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => AddExpenseScreen(groupId: widget.group.id, members: _members, currency: widget.group.currency, expenseToEdit: exp),
+                ),
+              );
+              if (result == true) _refreshData();
+            },
           ),
         );
       },
-    );
-  }
-
-  void _showDeleteConfirmation(Expense expense) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Expense?'),
-        content: Text('Are you sure you want to delete "${expense.description}"? This action soft-deletes and preserves history.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _deleteExpense(expense);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _deleteSettlement(Settlement set) async {
-    try {
-      final api = Provider.of<ApiService>(context, listen: false);
-      await api.deleteSettlement(widget.group.id, set.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settlement deleted successfully')),
-      );
-      _refreshData();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    }
-  }
-
-  void _showDeleteSettlementConfirmation(Settlement set) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Settlement?'),
-        content: Text('Are you sure you want to delete this settlement of ${widget.group.currency} ${set.amount.toStringAsFixed(2)}?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _deleteSettlement(set);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -462,38 +374,22 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
               '${set.note ?? "Settled debt"}\n${set.settlementDate.toLocal().toString().substring(0, 16)}',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${widget.group.currency} ${set.amount.toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF00C853)),
-                ),
-                if (set.paidBy.id == Provider.of<ApiService>(context, listen: false).userId)
-                  PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        final result = await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => RecordSettlementScreen(
-                              groupId: widget.group.id,
-                              members: _members,
-                              settlementToEdit: set,
-                            ),
-                          ),
-                        );
-                        if (result == true) _refreshData();
-                      } else if (value == 'delete') {
-                        _showDeleteSettlementConfirmation(set);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                    ],
-                  ),
-              ],
+            trailing: Text(
+              '${widget.group.currency} ${set.amount.toStringAsFixed(2)}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF00C853)),
             ),
+            onTap: () async {
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => RecordSettlementScreen(
+                    groupId: widget.group.id,
+                    members: _members,
+                    settlementToEdit: set,
+                  ),
+                ),
+              );
+              if (result == true) _refreshData();
+            },
           ),
         );
       },

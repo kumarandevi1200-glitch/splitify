@@ -7,12 +7,14 @@ import '../models.dart';
 class AddExpenseScreen extends StatefulWidget {
   final int groupId;
   final List<User> members;
+  final String currency;
   final Expense? expenseToEdit;
 
   const AddExpenseScreen({
     super.key,
     required this.groupId,
     required this.members,
+    required this.currency,
     this.expenseToEdit,
   });
 
@@ -25,7 +27,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   
-  String _selectedCategory = 'General';
   String _selectedSplitType = 'EQUAL'; // EQUAL, EXACT, PERCENTAGE, SHARES
   int? _selectedPayerId;
   
@@ -36,13 +37,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   String? _errorMessage;
   late String _idempotencyKey;
 
-  final List<String> _categories = ['General', 'Food', 'Travel', 'Housing', 'Entertainment', 'Utilities'];
-
   @override
   void initState() {
     super.initState();
     _idempotencyKey = '${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(999999)}';
     
+    // Add listener to rebuild amount reactively for equal splits
+    _amountController.addListener(() {
+      setState(() {});
+    });
+
     // Initialize participant states
     for (var m in widget.members) {
       _participating[m.id] = true;
@@ -54,7 +58,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       final exp = widget.expenseToEdit!;
       _amountController.text = exp.amount.toString();
       _descriptionController.text = exp.description;
-      _selectedCategory = _categories.contains(exp.category) ? exp.category : 'General';
       _selectedSplitType = exp.splitType;
       _selectedPayerId = exp.payer.id;
 
@@ -92,6 +95,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
+  void _updatePercentageSplits() {
+    if (_selectedSplitType != 'PERCENTAGE') return;
+    final activeCount = _participating.values.where((v) => v).length;
+    final pct = activeCount > 0 ? (100.0 / activeCount) : 0.0;
+    for (var member in widget.members) {
+      if (_participating[member.id] == true) {
+        _splitControllers[member.id]!.text = pct.toStringAsFixed(2);
+      } else {
+        _splitControllers[member.id]!.clear();
+      }
+    }
+  }
+
   void _onSplitTypeChanged(String? val) {
     if (val == null) return;
     setState(() {
@@ -99,6 +115,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       // Clear inputs
       for (var controller in _splitControllers.values) {
         controller.clear();
+      }
+      if (_selectedSplitType == 'PERCENTAGE') {
+        _updatePercentageSplits();
       }
     });
   }
@@ -150,6 +169,83 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     return true;
   }
 
+  String _predictCategory(String description) {
+    final desc = description.toLowerCase();
+    if (desc.contains('food') || desc.contains('restaurant') || desc.contains('dinner') || 
+        desc.contains('lunch') || desc.contains('breakfast') || desc.contains('pizza') || 
+        desc.contains('cafe') || desc.contains('burger') || desc.contains('grocery') || 
+        desc.contains('groceries') || desc.contains('eat') || desc.contains('drink') || 
+        desc.contains('coffee') || desc.contains('starbucks') || desc.contains('mcdonald')) {
+      return 'Food';
+    }
+    if (desc.contains('travel') || desc.contains('flight') || desc.contains('hotel') || 
+        desc.contains('uber') || desc.contains('taxi') || desc.contains('cab') || 
+        desc.contains('bus') || desc.contains('train') || desc.contains('trip') || 
+        desc.contains('gas') || desc.contains('fuel') || desc.contains('airline') || 
+        desc.contains('ticket') || desc.contains('metro') || desc.contains('commute')) {
+      return 'Travel';
+    }
+    if (desc.contains('housing') || desc.contains('rent') || desc.contains('stay') || 
+        desc.contains('room') || desc.contains('accommodation') || desc.contains('hostel') || 
+        desc.contains('apartment') || desc.contains('lease')) {
+      return 'Housing';
+    }
+    if (desc.contains('entertainment') || desc.contains('movie') || desc.contains('show') || 
+        desc.contains('cinema') || desc.contains('netflix') || desc.contains('game') || 
+        desc.contains('party') || desc.contains('club') || desc.contains('concert') || 
+        desc.contains('fun') || desc.contains('spotify') || desc.contains('pub')) {
+      return 'Entertainment';
+    }
+    if (desc.contains('utilities') || desc.contains('electricity') || desc.contains('water') || 
+        desc.contains('wifi') || desc.contains('internet') || desc.contains('bill') || 
+        desc.contains('power') || desc.contains('phone') || desc.contains('recharge')) {
+      return 'Utilities';
+    }
+    return 'General';
+  }
+
+  void _deleteExpenseInside() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final api = Provider.of<ApiService>(context, listen: false);
+
+    try {
+      await api.deleteExpense(widget.groupId, widget.expenseToEdit!.id);
+      if (mounted) {
+        Navigator.of(context).pop(true); // Return success
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  void _showDeleteConfirmationInside() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Expense?'),
+        content: Text('Are you sure you want to delete "${widget.expenseToEdit!.description}"? This action soft-deletes and preserves history.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteExpenseInside();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_validateSplits()) return;
@@ -175,6 +271,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       });
     }
 
+    final category = _predictCategory(_descriptionController.text.trim());
+
     try {
       if (widget.expenseToEdit != null) {
         await api.updateExpense(
@@ -184,7 +282,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           _selectedPayerId!,
           _descriptionController.text.trim(),
           _selectedSplitType,
-          _selectedCategory,
+          category,
           sharesPayload,
         );
       } else {
@@ -194,7 +292,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           _selectedPayerId!,
           _descriptionController.text.trim(),
           _selectedSplitType,
-          _selectedCategory,
+          category,
           sharesPayload,
           idempotencyKey: _idempotencyKey,
         );
@@ -218,9 +316,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final api = Provider.of<ApiService>(context, listen: false);
+    final canEdit = widget.expenseToEdit == null || widget.expenseToEdit!.payer.id == api.userId;
+
+    final double totalAmt = double.tryParse(_amountController.text) ?? 0.0;
+    final activeCount = _participating.values.where((v) => v).length;
+    final shareAmt = activeCount > 0 ? totalAmt / activeCount : 0.0;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.expenseToEdit != null ? 'Edit Expense' : 'Add Expense'),
+        title: Text(widget.expenseToEdit != null ? (canEdit ? 'Edit Expense' : 'View Expense') : 'Add Expense'),
       ),
       body: Form(
         key: _formKey,
@@ -237,6 +342,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       // Amount Field
                       TextFormField(
                         controller: _amountController,
+                        enabled: canEdit,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(
                           labelText: 'Amount',
@@ -255,6 +361,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       // Description Field
                       TextFormField(
                         controller: _descriptionController,
+                        enabled: canEdit,
                         decoration: const InputDecoration(
                           labelText: 'Description',
                           prefixIcon: Icon(Icons.description),
@@ -274,7 +381,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Payer & Category', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('Payer', style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 16),
                       
                       // Payer Dropdown
@@ -290,25 +397,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                             child: Text(m.email),
                           );
                         }).toList(),
-                        onChanged: (val) => setState(() => _selectedPayerId = val),
+                        onChanged: canEdit ? (val) => setState(() => _selectedPayerId = val) : null,
                         validator: (val) => val == null ? 'Select who paid' : null,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Category Dropdown
-                      DropdownButtonFormField<String>(
-                        value: _selectedCategory,
-                        decoration: const InputDecoration(
-                          labelText: 'Category',
-                          prefixIcon: Icon(Icons.category),
-                        ),
-                        items: _categories.map((c) {
-                          return DropdownMenuItem<String>(
-                            value: c,
-                            child: Text(c),
-                          );
-                        }).toList(),
-                        onChanged: (val) => setState(() => _selectedCategory = val ?? 'General'),
                       ),
                     ],
                   ),
@@ -335,7 +425,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                               DropdownMenuItem(value: 'PERCENTAGE', child: Text('Percentages')),
                               DropdownMenuItem(value: 'SHARES', child: Text('Shares')),
                             ],
-                            onChanged: _onSplitTypeChanged,
+                            onChanged: canEdit ? _onSplitTypeChanged : null,
                           ),
                         ],
                       ),
@@ -358,20 +448,39 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                               children: [
                                 Checkbox(
                                   value: isChecked,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _participating[member.id] = val ?? false;
-                                    });
-                                  },
+                                  onChanged: canEdit
+                                      ? (val) {
+                                          setState(() {
+                                            _participating[member.id] = val ?? false;
+                                            if (_selectedSplitType == 'PERCENTAGE') {
+                                              _updatePercentageSplits();
+                                            }
+                                          });
+                                        }
+                                      : null,
                                 ),
                                 Expanded(
                                   child: Text(member.email, overflow: TextOverflow.ellipsis),
                                 ),
+                                if (_selectedSplitType == 'EQUAL')
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8.0),
+                                    child: Text(
+                                      isChecked
+                                          ? '${widget.currency} ${shareAmt.toStringAsFixed(2)}'
+                                          : '${widget.currency} 0.00',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isChecked ? const Color(0xFF03DAC6) : Colors.grey,
+                                      ),
+                                    ),
+                                  ),
                                 if (isChecked && _selectedSplitType != 'EQUAL')
                                   SizedBox(
                                     width: 100,
                                     child: TextFormField(
                                       controller: _splitControllers[member.id],
+                                      enabled: canEdit,
                                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                       decoration: InputDecoration(
                                         hintText: _selectedSplitType == 'EXACT'
@@ -409,12 +518,34 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 const SizedBox(height: 16),
               ],
 
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submit,
-                child: _isLoading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(widget.expenseToEdit != null ? 'Save Changes' : 'Record Expense'),
-              ),
+              if (canEdit) ...[
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _submit,
+                  child: _isLoading
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : Text(widget.expenseToEdit != null ? 'Save Changes' : 'Record Expense'),
+                ),
+                if (widget.expenseToEdit != null) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _isLoading ? null : _showDeleteConfirmationInside,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(color: Theme.of(context).colorScheme.error),
+                    ),
+                    child: const Text('Delete Expense'),
+                  ),
+                ],
+              ] else ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    'Read-only: Only the payer of this expense can edit or delete it.',
+                    style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
