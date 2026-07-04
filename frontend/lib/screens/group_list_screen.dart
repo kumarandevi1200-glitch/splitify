@@ -354,12 +354,15 @@ class _GroupListScreenState extends State<GroupListScreen> {
                             margin: const EdgeInsets.only(bottom: 16),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),
-                              onTap: () {
-                                Navigator.of(context).push(
+                              onTap: () async {
+                                final result = await Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => GroupDetailScreen(group: group),
                                   ),
                                 );
+                                if (result == true) {
+                                  _refreshGroups();
+                                }
                               },
                               child: Container(
                                 decoration: BoxDecoration(

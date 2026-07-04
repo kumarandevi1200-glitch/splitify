@@ -148,6 +148,12 @@ public class GroupService {
         return group;
     }
 
+    @Transactional
+    public void deleteGroup(Long groupId, String email) {
+        Group group = getGroupAndVerifyMembership(groupId, email);
+        groupRepository.delete(group);
+    }
+
     private GroupResponse mapToGroupResponse(Group group) {
         List<MemberResponse> members = group.getMembers().stream()
                 .map(m -> new MemberResponse(m.getId(), m.getDisplayName()))

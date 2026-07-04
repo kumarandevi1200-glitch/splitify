@@ -232,6 +232,17 @@ class ApiService extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteGroup(int groupId) async {
+    final response = await _authenticatedRequest(() => http.delete(
+      Uri.parse('$_baseUrl/api/groups/$groupId'),
+      headers: _headers(),
+    ));
+
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      _throwError(response);
+    }
+  }
+
   Future<String> generateInviteCode(int groupId, {int? validityHours, int? maxUses}) async {
     String query = '';
     if (validityHours != null || maxUses != null) {

@@ -194,6 +194,58 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
     );
   }
 
+  Future<void> _confirmAndDeleteGroup() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Group?'),
+        content: const Text(
+          'Are you sure you want to permanently delete this group? '
+          'This will delete all expenses, settlements, and invite codes. '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final api = Provider.of<ApiService>(context, listen: false);
+        await api.deleteGroup(widget.group.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Group deleted successfully')),
+          );
+          Navigator.of(context).pop(true);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          });
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -231,6 +283,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                 ),
               );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete Group',
+            onPressed: _confirmAndDeleteGroup,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),

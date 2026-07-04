@@ -62,4 +62,12 @@ public class GroupController {
             Principal principal) {
         return ResponseEntity.ok(reportService.generateReport(groupId, principal.getName()));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteGroup(
+            @PathVariable("id") Long groupId,
+            Principal principal) {
+        groupService.deleteGroup(groupId, principal.getName());
+        return ResponseEntity.noContent().build();
+    }
 }
