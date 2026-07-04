@@ -7,11 +7,17 @@ import '../models.dart';
 class ReportScreen extends StatefulWidget {
   final int groupId;
   final String currency;
+  final int currentUserId;
+  final List<Expense> expenses;
+  final List<Settlement> settlements;
 
   const ReportScreen({
     super.key,
     required this.groupId,
     required this.currency,
+    required this.currentUserId,
+    required this.expenses,
+    required this.settlements,
   });
 
   @override
@@ -76,6 +82,10 @@ class _ReportScreenState extends State<ReportScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // --- MY PERSONAL REPORT ---
+                          _buildMyReport(),
+                          const SizedBox(height: 16),
+
                           // --- TOTAL SPEND CARD ---
                           _buildTotalSpendCard(),
                           const SizedBox(height: 16),
@@ -93,6 +103,153 @@ class _ReportScreenState extends State<ReportScreen> {
                         ],
                       ),
                     ),
+    );
+  }
+
+  Widget _buildMyReport() {
+    final myExpensesPaid = widget.expenses.where((e) => e.payer.id == widget.currentUserId).toList();
+    final myParticipated = widget.expenses.where((e) =>
+      e.payer.id != widget.currentUserId &&
+      e.shares.any((s) => s.userId == widget.currentUserId)
+    ).toList();
+    final mySettlements = widget.settlements.where((s) =>
+      s.paidBy.id == widget.currentUserId || s.paidTo.id == widget.currentUserId
+    ).toList();
+
+    final double totalPaid = myExpensesPaid.fold(0.0, (sum, e) => sum + e.amount);
+    final double totalOwed = widget.expenses.fold(0.0, (sum, e) {
+      final share = e.shares.where((s) => s.userId == widget.currentUserId);
+      if (share.isEmpty) return sum;
+      return sum + share.first.shareAmount;
+    });
+    final myBalance = _report?.balances.where((b) => b.userId == widget.currentUserId).firstOrNull;
+    final double netBalance = myBalance?.balance ?? 0.0;
+    final bool isPositive = netBalance > 0;
+    final bool isNegative = netBalance < 0;
+    final Color balanceColor = isPositive
+        ? const Color(0xFF10B981)
+        : isNegative
+            ? const Color(0xFFEF4444)
+            : Colors.grey;
+    final String balanceLabel = isPositive ? 'you get back' : isNegative ? 'you owe' : 'settled up';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('My Report', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            const Text('Your personal activity in this group', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            const Divider(height: 24),
+
+            // Summary row
+            Row(
+              children: [
+                _myStatChip('Paid for group', '${widget.currency} ${totalPaid.toStringAsFixed(2)}', const Color(0xFF8B5CF6)),
+                const SizedBox(width: 12),
+                _myStatChip('Your share', '${widget.currency} ${totalOwed.toStringAsFixed(2)}', const Color(0xFF3B82F6)),
+                const SizedBox(width: 12),
+                _myStatChip(balanceLabel, '${widget.currency} ${netBalance.abs().toStringAsFixed(2)}', balanceColor),
+              ],
+            ),
+
+            // Expenses I Paid
+            if (myExpensesPaid.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const Text('Expenses I Paid', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 8),
+              ...myExpensesPaid.map((e) => _myExpenseRow(
+                e.description,
+                '${widget.currency} ${e.amount.toStringAsFixed(2)}',
+                '${e.expenseDate.day}/${e.expenseDate.month}/${e.expenseDate.year}',
+                const Color(0xFF8B5CF6),
+              )),
+            ],
+
+            // Expenses I Participated In
+            if (myParticipated.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const Text('Expenses I Participated In', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 8),
+              ...myParticipated.map((e) {
+                final myShare = e.shares.where((s) => s.userId == widget.currentUserId).firstOrNull;
+                return _myExpenseRow(
+                  e.description,
+                  'my share: ${widget.currency} ${myShare?.shareAmount.toStringAsFixed(2) ?? "-"}',
+                  '${e.expenseDate.day}/${e.expenseDate.month}/${e.expenseDate.year}',
+                  const Color(0xFF3B82F6),
+                );
+              }),
+            ],
+
+            // My Settlements
+            if (mySettlements.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const Text('My Settlements', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 8),
+              ...mySettlements.map((s) {
+                final bool iPaid = s.paidBy.id == widget.currentUserId;
+                final String label = iPaid ? 'paid ${s.paidTo.email}' : 'received from ${s.paidBy.email}';
+                return _myExpenseRow(
+                  label,
+                  '${widget.currency} ${s.amount.toStringAsFixed(2)}',
+                  '${s.settlementDate.day}/${s.settlementDate.month}/${s.settlementDate.year}',
+                  iPaid ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                );
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _myStatChip(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(value, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _myExpenseRow(String title, String amount, String date, Color accentColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 36,
+            decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(4)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(title, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(amount, style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(date, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

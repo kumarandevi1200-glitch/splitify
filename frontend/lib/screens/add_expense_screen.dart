@@ -120,6 +120,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     _descriptionController.addListener(_markDirty);
     for (var controller in _splitControllers.values) {
       controller.addListener(_markDirty);
+      // Trigger setState so shares amount preview updates live
+      controller.addListener(() {
+        if (mounted && _selectedSplitType == 'SHARES') setState(() {});
+      });
     }
   }
 
@@ -558,28 +562,58 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                   ),
                                 if (isChecked && _selectedSplitType != 'EQUAL')
                                   SizedBox(
-                                    width: 100,
-                                    child: TextFormField(
-                                      controller: _splitControllers[member.id],
-                                      enabled: canEdit,
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                                    width: 110,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        TextFormField(
+                                          controller: _splitControllers[member.id],
+                                          enabled: canEdit,
+                                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                                          ],
+                                          decoration: InputDecoration(
+                                            hintText: _selectedSplitType == 'EXACT'
+                                                ? 'Amount'
+                                                : _selectedSplitType == 'PERCENTAGE'
+                                                    ? '%'
+                                                    : 'Shares',
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          ),
+                                          validator: (value) {
+                                            if (isChecked && (value == null || double.tryParse(value) == null)) {
+                                              return 'Required';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                        // Live amount preview for SHARES split type
+                                        if (_selectedSplitType == 'SHARES') Builder(
+                                          builder: (_) {
+                                            final double totalAmt = double.tryParse(_amountController.text) ?? 0.0;
+                                            double totalShares = 0;
+                                            for (var m in widget.members) {
+                                              if (_participating[m.id] == true) {
+                                                totalShares += double.tryParse(_splitControllers[m.id]?.text ?? '') ?? 0;
+                                              }
+                                            }
+                                            final myShares = double.tryParse(_splitControllers[member.id]?.text ?? '') ?? 0;
+                                            final myAmt = totalShares > 0 ? (myShares / totalShares) * totalAmt : 0.0;
+                                            return Padding(
+                                              padding: const EdgeInsets.only(top: 2, right: 4),
+                                              child: Text(
+                                                '≈ ${widget.currency} ${myAmt.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: Color(0xFF8B5CF6),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
                                       ],
-                                      decoration: InputDecoration(
-                                        hintText: _selectedSplitType == 'EXACT'
-                                            ? 'Amount'
-                                            : _selectedSplitType == 'PERCENTAGE'
-                                                ? '%'
-                                                : 'Shares',
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      ),
-                                      validator: (value) {
-                                        if (isChecked && (value == null || double.tryParse(value) == null)) {
-                                          return 'Required';
-                                        }
-                                        return null;
-                                      },
                                     ),
                                   ),
                               ],

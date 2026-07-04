@@ -218,9 +218,16 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
             icon: const Icon(Icons.assessment),
             tooltip: 'View Report & Balances',
             onPressed: () {
+              final api = Provider.of<ApiService>(context, listen: false);
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => ReportScreen(groupId: widget.group.id, currency: widget.group.currency),
+                  builder: (_) => ReportScreen(
+                    groupId: widget.group.id,
+                    currency: widget.group.currency,
+                    currentUserId: api.userId ?? -1,
+                    expenses: _expenses,
+                    settlements: _settlements,
+                  ),
                 ),
               );
             },
