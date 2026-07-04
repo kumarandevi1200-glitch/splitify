@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../api_service.dart';
 import '../models.dart';
@@ -219,14 +220,20 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
                         controller: _amountController,
                         enabled: canEdit,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        ],
                         decoration: const InputDecoration(
                           labelText: 'Payment Amount',
-                          prefixIcon: Icon(Icons.attach_money),
+                          prefixIcon: Icon(Icons.currency_rupee),
                         ),
                         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                         validator: (value) {
                           if (value == null || double.tryParse(value) == null || double.parse(value) <= 0) {
                             return 'Enter a valid amount greater than 0';
+                          }
+                          if (double.parse(value) > 999999999999) {
+                            return 'Amount is too large (maximum 999,999,999,999)';
                           }
                           return null;
                         },

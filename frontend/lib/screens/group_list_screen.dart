@@ -171,7 +171,6 @@ class _GroupListScreenState extends State<GroupListScreen> {
 
   void _showCreateGroupDialog() {
     final nameController = TextEditingController();
-    final currencyController = TextEditingController(text: 'INR');
     bool isSaving = false;
 
     showDialog(
@@ -191,14 +190,6 @@ class _GroupListScreenState extends State<GroupListScreen> {
                       hintText: 'e.g. Goa Trip, Flatmates',
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: currencyController,
-                    decoration: const InputDecoration(
-                      labelText: 'Currency Symbol',
-                      hintText: 'e.g. INR, USD, EUR',
-                    ),
-                  ),
                 ],
               ),
               actions: [
@@ -216,7 +207,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
                             final api = Provider.of<ApiService>(context, listen: false);
                             await api.createGroup(
                               nameController.text.trim(),
-                              currencyController.text.trim(),
+                              '₹',
                             );
                             Navigator.of(context).pop();
                             _refreshGroups();
