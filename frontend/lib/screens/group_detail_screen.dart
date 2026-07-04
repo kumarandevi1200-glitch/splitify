@@ -204,7 +204,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
           indicatorColor: const Color(0xFF8B5CF6),
           tabs: const [
             Tab(text: 'Expenses', icon: Icon(Icons.receipt_long)),
-            Tab(text: 'Settlements', icon: Icon(Icons.payment)),
+            Tab(text: 'Settle Up', icon: Icon(Icons.payment)),
             Tab(text: 'Members', icon: Icon(Icons.people)),
           ],
         ),
