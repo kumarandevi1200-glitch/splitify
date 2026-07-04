@@ -97,6 +97,10 @@ public class ExpenseService {
             throw new CustomException("EXPENSE_DELETED", "Cannot update a soft-deleted expense", HttpStatus.BAD_REQUEST);
         }
 
+        if (!expense.getPayer().getEmail().equals(email)) {
+            throw new CustomException("UNAUTHORIZED_ACTION", "Only the payer of the expense can edit it", HttpStatus.FORBIDDEN);
+        }
+
         // Verify version matches DTO to prevent concurrent edits
         // Spring JPA @Version handles actual locking, but checking inputs is good practice.
 
@@ -144,6 +148,10 @@ public class ExpenseService {
 
         if (!expense.getGroup().getId().equals(groupId)) {
             throw new CustomException("EXPENSE_NOT_IN_GROUP", "Expense does not belong to the specified group", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!expense.getPayer().getEmail().equals(email)) {
+            throw new CustomException("UNAUTHORIZED_ACTION", "Only the payer of the expense can delete it", HttpStatus.FORBIDDEN);
         }
 
         expense.setDeleted(true);

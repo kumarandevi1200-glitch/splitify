@@ -7,11 +7,13 @@ import '../models.dart';
 class RecordSettlementScreen extends StatefulWidget {
   final int groupId;
   final List<User> members;
+  final Settlement? settlementToEdit;
 
   const RecordSettlementScreen({
     super.key,
     required this.groupId,
     required this.members,
+    this.settlementToEdit,
   });
 
   @override
@@ -33,11 +35,17 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
     super.initState();
     _idempotencyKey = '${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(999999)}';
     
-    // Default recipient is the first member that is not the logged-in user
-    final api = Provider.of<ApiService>(context, listen: false);
-    final otherMembers = widget.members.where((m) => m.id != api.userId).toList();
-    if (otherMembers.isNotEmpty) {
-      _selectedRecipientId = otherMembers.first.id;
+    if (widget.settlementToEdit != null) {
+      _amountController.text = widget.settlementToEdit!.amount.toString();
+      _noteController.text = widget.settlementToEdit!.note ?? '';
+      _selectedRecipientId = widget.settlementToEdit!.paidTo.id;
+    } else {
+      // Default recipient is the first member that is not the logged-in user
+      final api = Provider.of<ApiService>(context, listen: false);
+      final otherMembers = widget.members.where((m) => m.id != api.userId).toList();
+      if (otherMembers.isNotEmpty) {
+        _selectedRecipientId = otherMembers.first.id;
+      }
     }
   }
 
@@ -59,13 +67,23 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
     final api = Provider.of<ApiService>(context, listen: false);
 
     try {
-      await api.recordSettlement(
-        widget.groupId,
-        _selectedRecipientId!,
-        double.parse(_amountController.text),
-        _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
-        idempotencyKey: _idempotencyKey,
-      );
+      if (widget.settlementToEdit != null) {
+        await api.updateSettlement(
+          widget.groupId,
+          widget.settlementToEdit!.id,
+          _selectedRecipientId!,
+          double.parse(_amountController.text),
+          _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+        );
+      } else {
+        await api.recordSettlement(
+          widget.groupId,
+          _selectedRecipientId!,
+          double.parse(_amountController.text),
+          _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+          idempotencyKey: _idempotencyKey,
+        );
+      }
 
       if (mounted) {
         Navigator.of(context).pop(true); // Return success
@@ -90,7 +108,7 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Record Settlement'),
+        title: Text(widget.settlementToEdit != null ? 'Edit Settlement' : 'Record Settlement'),
       ),
       body: Form(
         key: _formKey,
@@ -168,7 +186,7 @@ class _RecordSettlementScreenState extends State<RecordSettlementScreen> {
                 onPressed: _isLoading || _selectedRecipientId == null ? null : _submit,
                 child: _isLoading
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Record Settlement Payment'),
+                    : Text(widget.settlementToEdit != null ? 'Update Settlement' : 'Record Settlement Payment'),
               ),
             ],
           ),

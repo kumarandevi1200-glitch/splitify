@@ -74,6 +74,58 @@ public class SettlementService {
         return settlements.stream().map(this::mapToSettlementResponse).collect(Collectors.toList());
     }
 
+    @Transactional
+    public SettlementResponse updateSettlement(Long groupId, Long settlementId, SettlementCreateRequest request, String email) {
+        groupService.getGroupAndVerifyMembership(groupId, email);
+
+        Settlement settlement = settlementRepository.findById(settlementId)
+                .orElseThrow(() -> new CustomException("SETTLEMENT_NOT_FOUND", "Settlement not found", HttpStatus.NOT_FOUND));
+
+        if (!settlement.getGroup().getId().equals(groupId)) {
+            throw new CustomException("SETTLEMENT_NOT_IN_GROUP", "Settlement does not belong to the specified group", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!settlement.getPaidBy().getEmail().equals(email)) {
+            throw new CustomException("UNAUTHORIZED_ACTION", "Only the payer of the settlement can edit it", HttpStatus.FORBIDDEN);
+        }
+
+        User paidTo = userRepository.findById(request.getPaidToId())
+                .orElseThrow(() -> new CustomException("USER_NOT_FOUND", "Recipient not found", HttpStatus.BAD_REQUEST));
+
+        if (!settlement.getGroup().getMembers().contains(paidTo)) {
+            throw new CustomException("RECIPIENT_NOT_MEMBER", "Recipient is not a member of the group", HttpStatus.BAD_REQUEST);
+        }
+
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CustomException("INVALID_AMOUNT", "Amount must be greater than 0", HttpStatus.BAD_REQUEST);
+        }
+
+        settlement.setPaidTo(paidTo);
+        settlement.setAmount(request.getAmount().setScale(2, RoundingMode.HALF_EVEN));
+        settlement.setNote(request.getNote());
+
+        Settlement savedSettlement = settlementRepository.save(settlement);
+        return mapToSettlementResponse(savedSettlement);
+    }
+
+    @Transactional
+    public void deleteSettlement(Long groupId, Long settlementId, String email) {
+        groupService.getGroupAndVerifyMembership(groupId, email);
+
+        Settlement settlement = settlementRepository.findById(settlementId)
+                .orElseThrow(() -> new CustomException("SETTLEMENT_NOT_FOUND", "Settlement not found", HttpStatus.NOT_FOUND));
+
+        if (!settlement.getGroup().getId().equals(groupId)) {
+            throw new CustomException("SETTLEMENT_NOT_IN_GROUP", "Settlement does not belong to the specified group", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!settlement.getPaidBy().getEmail().equals(email)) {
+            throw new CustomException("UNAUTHORIZED_ACTION", "Only the payer of the settlement can delete it", HttpStatus.FORBIDDEN);
+        }
+
+        settlementRepository.delete(settlement);
+    }
+
     private SettlementResponse mapToSettlementResponse(Settlement settlement) {
         MemberResponse paidBy = new MemberResponse(settlement.getPaidBy().getId(), settlement.getPaidBy().getDisplayName());
         MemberResponse paidTo = new MemberResponse(settlement.getPaidTo().getId(), settlement.getPaidTo().getDisplayName());

@@ -26,6 +26,24 @@ public class SettlementController {
         return ResponseEntity.ok(settlementService.recordSettlement(groupId, request, principal.getName()));
     }
 
+    @PutMapping("/{settlementId}")
+    public ResponseEntity<SettlementResponse> updateSettlement(
+            @PathVariable("groupId") Long groupId,
+            @PathVariable("settlementId") Long settlementId,
+            @Valid @RequestBody SettlementCreateRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(settlementService.updateSettlement(groupId, settlementId, request, principal.getName()));
+    }
+
+    @DeleteMapping("/{settlementId}")
+    public ResponseEntity<Void> deleteSettlement(
+            @PathVariable("groupId") Long groupId,
+            @PathVariable("settlementId") Long settlementId,
+            Principal principal) {
+        settlementService.deleteSettlement(groupId, settlementId, principal.getName());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     public ResponseEntity<List<SettlementResponse>> listGroupSettlements(
             @PathVariable("groupId") Long groupId,

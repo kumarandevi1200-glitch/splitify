@@ -422,6 +422,44 @@ class ApiService extends ChangeNotifier {
     }
   }
 
+  Future<Settlement> updateSettlement(
+      int groupId,
+      int settlementId,
+      int paidToId,
+      double amount,
+      String? note) async {
+
+    final body = {
+      'paidToId': paidToId,
+      'amount': amount,
+      'note': note,
+    };
+
+    final response = await _authenticatedRequest(() => http.put(
+      Uri.parse('$_baseUrl/api/groups/$groupId/settlements/$settlementId'),
+      headers: _headers(),
+      body: jsonEncode(body),
+    ));
+
+    if (response.statusCode == 200) {
+      return Settlement.fromJson(jsonDecode(response.body));
+    } else {
+      _throwError(response);
+      throw Exception('Update settlement failed');
+    }
+  }
+
+  Future<void> deleteSettlement(int groupId, int settlementId) async {
+    final response = await _authenticatedRequest(() => http.delete(
+      Uri.parse('$_baseUrl/api/groups/$groupId/settlements/$settlementId'),
+      headers: _headers(),
+    ));
+
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      _throwError(response);
+    }
+  }
+
   // --- REPORT SERVICES ---
 
   Future<Report> fetchReport(int groupId) async {
