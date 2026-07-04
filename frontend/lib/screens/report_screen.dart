@@ -360,62 +360,6 @@ class _ReportScreenState extends State<ReportScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-        ],
-
-        // --- DAILY SPEND BAR CHART ---
-        if (_report!.dailySpend.isNotEmpty) ...[
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Daily Spending Trend', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    height: 200,
-                    child: BarChart(
-                      BarChartData(
-                        barGroups: _buildBarGroups(),
-                        borderData: FlBorderData(show: false),
-                        titlesData: FlTitlesData(
-                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (val, meta) {
-                                int index = val.toInt();
-                                if (index >= 0 && index < _report!.dailySpend.length) {
-                                  // Return only day number e.g. "02" from "2026-07-02"
-                                  String dateStr = _report!.dailySpend[index].date;
-                                  return Text(
-                                    dateStr.substring(dateStr.length - 2),
-                                    style: const TextStyle(color: Colors.grey, fontSize: 10),
-                                  );
-                                }
-                                return const SizedBox();
-                              },
-                            ),
-                          ),
-                        ),
-                        gridData: const FlGridData(show: false),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Center(
-                    child: Text(
-                      'Dates sorted chronologically (day of month)',
-                      style: TextStyle(color: Colors.grey, fontSize: 10),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ],
     );
@@ -475,25 +419,4 @@ class _ReportScreenState extends State<ReportScreen> {
         );
       }),
     );
-  }
-
-  List<BarChartGroupData> _buildBarGroups() {
-    return List.generate(_report!.dailySpend.length, (index) {
-      final ds = _report!.dailySpend[index];
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(
-            toY: ds.amount,
-            color: const Color(0xFF6C63FF),
-            width: 16,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          ),
-        ],
-      );
-    });
-  }
-}
+  }}
